@@ -30,8 +30,18 @@ pub enum Token {
     RSquare,
     #[token(">")]
     RArrow,
+    #[token("def")]
+    Def,
     #[regex(r"true|false", parse_bool)]
     Bool(bool),
+    #[token("fn")]
+    Function,
+    #[token("start")]
+    Start,
+    #[token("end")]
+    End,
+    #[token(",")]
+    Comma,
     #[regex(r"\\s|\\n|\\r|\\t|\\b|\\f|\\r|", parse_str)]
     Whitespace(String),
     // Logos requires one token variant to handle errors,

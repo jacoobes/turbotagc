@@ -6,6 +6,7 @@ use chumsky::Stream;
 use logos::{Logos, Span};
 use logos::Lexer;
 use wasm_bindgen::prelude::*;
+use crate::decl::Decl;
 
 use crate::expr::Expr;
 use crate::tokens::Token;
@@ -14,6 +15,7 @@ mod utils;
 mod tokens;
 mod expr;
 mod lex_tostream;
+mod decl;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -29,11 +31,17 @@ extern {
 
 
 #[wasm_bindgen]
-pub fn compile(content : &str)  {
+pub fn compile(content : &str, parse_decl: bool)  {
     let mut lexer : Lexer<Token> = Token::lexer(content);
     let stream = Stream::from_iter(Span::new((), 0usize..lexer.source().len()), lexer.spanned());
-    let formatted = format!("{:?}", expr_parser().parse(stream));
-    log(formatted.as_ref() );
+    if !parse_decl {
+        let formatted = format!("{:?}", expr_parser().parse(stream));
+        log(formatted.as_ref() );
+    }
+    else {
+        let formatted = format!("{:?}", decl_parser().parse(stream));
+        log(formatted.as_ref() );
+    }
 }
 fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
     use chumsky::prelude::*;
@@ -76,5 +84,17 @@ fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>
               .or(fill_ins);
         atom
     }).repeated().then_ignore(end())
+}
 
+
+fn decl_parser() ->  impl Parser<Token, Vec<Decl>, Error = Simple<Token>> {
+        let idents = select! { Token::Ident(i) => i.to_string() };
+        let defs = just(Token::Def)
+            .ignore_then(idents)
+            .then_ignore(just(Token::Equal))
+            .then(expr_parser())
+            .map(|s| {
+                Decl::Def { name: s.0, rhs: s.1 }
+            });
+        defs.repeated()
 }
