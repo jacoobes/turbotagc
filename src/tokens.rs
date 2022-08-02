@@ -10,7 +10,7 @@ pub enum Token {
     Pipe,
     #[regex("[a-zA-Z0-9]+", parse_str)]
     Ident(String),
-    #[regex(r"\$[a-zA-Z]+", parse_str)]
+    #[regex(r"\$[a-zA-Z  \t\n\f]+", parse_str)]
     Template(String),
     #[token("{{")]
     LLBrace,
@@ -32,11 +32,12 @@ pub enum Token {
     RArrow,
     #[regex(r"true|false", parse_bool)]
     Bool(bool),
-    #[regex(r"[ \t\n\f]+", logos::skip)]
-    Whitespace,
+    #[regex(r"\\s|\\n|\\r|\\t|\\b|\\f|\\r|", parse_str)]
+    Whitespace(String),
     // Logos requires one token variant to handle errors,
     // it can be named anything you wish.
     #[error]
+    #[regex(r"[ \t\n\f]+", logos::skip)]
     // We can also use this variant to define whitespace,
     // or any other matches we wish to skip.
     Error,

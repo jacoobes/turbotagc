@@ -13,13 +13,14 @@ pub enum Expr {
     Fn {
         name: String,
         args: Vec<String>,
-        body: Box<Expr>,
-        then: Box<Expr>,
+        body: Vec<Expr>,
+        then: Vec<Expr>,
     },
-    FillIn(Box<Expr>),
+    FillIn(Vec<Expr>),
     Pipeable {
         expr : Box<Expr>,
         chain : Vec<Expr>
     },
-    Template(String)
+    Template(String),
+    Whitespace(String)
 }

@@ -31,10 +31,11 @@ extern {
 #[wasm_bindgen]
 pub fn compile(content : &str)  {
     let mut lexer : Lexer<Token> = Token::lexer(content);
-    let formatted = format!("{:?}", parser().parse(Stream::from_iter(Span::new((), 0usize..lexer.source().len()), lexer.spanned())));
+    let stream = Stream::from_iter(Span::new((), 0usize..lexer.source().len()), lexer.spanned());
+    let formatted = format!("{:?}", expr_parser().parse(stream));
     log(formatted.as_ref() );
 }
-fn parser<'source>() -> impl Parser<Token, Expr, Error = Simple<Token>> {
+fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
     use chumsky::prelude::*;
 
     recursive(|expr| {
@@ -42,12 +43,8 @@ fn parser<'source>() -> impl Parser<Token, Expr, Error = Simple<Token>> {
             Token::Bool(b) => Expr::Bool(b),
             Token::Ident(i) => Expr::Var(i),
             Token::Template(i) => Expr::Template(i),
+            Token::Whitespace(i) => Expr::Whitespace(i),
         }.labelled("prims");
-        let parens =  expr
-            .clone()
-            .delimited_by(
-                just(Token::LParen), just(Token::RParen)
-            ).labelled("parenthesis");
 
         let pipeable=  just(Token::LSquare)
             .ignore_then(
@@ -68,18 +65,16 @@ fn parser<'source>() -> impl Parser<Token, Expr, Error = Simple<Token>> {
             });
 
         let fill_ins = just(Token::LLBrace)
-                .ignore_then(expr.clone())
+                .ignore_then(expr.clone().repeated())
                 .then_ignore(just(Token::RRBrace))
-                .map(|t : Expr| {
-                    Expr::FillIn(Box::new(t))
+                .map(|t : Vec<Expr>| {
+                    Expr::FillIn(t)
                 }).labelled("fill_in");
-
         let atom =
             prims
-              .or(parens)
               .or(pipeable)
               .or(fill_ins);
         atom
-    }).then_ignore(end())
+    }).repeated().then_ignore(end())
 
 }

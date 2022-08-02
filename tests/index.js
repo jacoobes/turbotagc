@@ -1,11 +1,8 @@
 const { compile } = require('../pkg/turbotagc')
 
-compile(`{{
-            [ 
-            asd > a | b 
-            ]
-        }}
-    `);
+compile(String.raw`
+    {{ lorem \s\s ipsum }} [ a > c | d ]
+`);
 
 
 /**
