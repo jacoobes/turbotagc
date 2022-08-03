@@ -4,13 +4,11 @@ use logos::{ Lexer, Logos };
 #[derive(Logos, Debug, PartialEq, Clone, Hash, Eq)]
 pub enum Token {
     // Tokens can be literal strings, of any length.
-    #[token("$")]
-    Dollar,
     #[token("|")]
     Pipe,
     #[regex("[a-zA-Z0-9]+", parse_str)]
     Ident(String),
-    #[regex(r"\$[a-zA-Z  \t\n\f]+", parse_str)]
+    #[regex(r"\$[a-zA-Z]+", parse_str)]
     Template(String),
     #[token("{{")]
     LLBrace,

@@ -31,19 +31,26 @@ extern {
 
 
 #[wasm_bindgen]
-pub fn compile(content : &str, parse_decl: bool)  {
+pub fn compile(content : &str)  {
     let mut lexer : Lexer<Token> = Token::lexer(content);
     let stream = Stream::from_iter(Span::new((), 0usize..lexer.source().len()), lexer.spanned());
-    if !parse_decl {
-        let formatted = format!("{:?}", expr_parser().parse(stream));
-        log(formatted.as_ref() );
-    }
-    else {
-        let formatted = format!("{:?}", decl_parser().parse(stream));
-        log(formatted.as_ref() );
-    }
+
+    log(&format!("{:?}", parser().parse(stream)))
 }
-fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
+
+fn parser() -> impl Parser<Token, (Vec<Decl>, Vec<Expr>), Error = Simple<Token>> {
+    decl_parser()
+        .then(
+            expr_parser()
+                .delimited_by(
+                just(Token::Start), just(Token::End)
+            )
+        )
+        .then_ignore(end())
+
+}
+
+fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
     use chumsky::prelude::*;
 
     recursive(|expr| {
@@ -54,13 +61,15 @@ fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>
             Token::Whitespace(i) => Expr::Whitespace(i),
         }.labelled("prims");
 
-        let pipeable=  just(Token::LSquare)
+        let pipeable=  prims.clone()
+            .or(
+            just(Token::LSquare)
             .ignore_then(
                 expr.clone()
                     .then_ignore(just(Token::RArrow))
                     .then(
-                     expr.clone().
-                        separated_by(
+                     expr.clone()
+                         .separated_by(
                             just(Token::Pipe)
                         )
                         .allow_leading()
@@ -70,8 +79,7 @@ fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>
             .then_ignore(just(Token::RSquare))
             .map(| (expr, chain) : (Expr, Vec<Expr>)   | {
                 Expr::Pipeable { expr: Box::new(expr), chain, }
-            });
-
+            }));
         let fill_ins = just(Token::LLBrace)
                 .ignore_then(expr.clone().repeated())
                 .then_ignore(just(Token::RRBrace))
@@ -83,7 +91,7 @@ fn expr_parser<'source>() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>
               .or(pipeable)
               .or(fill_ins);
         atom
-    }).repeated().then_ignore(end())
+    }).repeated()
 }
 
 

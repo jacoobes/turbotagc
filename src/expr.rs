@@ -10,6 +10,9 @@ pub enum Expr {
         expr : Box<Expr>,
         chain : Vec<Expr>
     },
+    Or {
+        branches : Vec<Expr>
+    },
     Template(String),
     Whitespace(String)
 }

@@ -1,7 +1,11 @@
 const { compile } = require('../pkg/turbotagc')
 
 compile(String.raw`
-    def test = {{ lorem \s\s ipsum }} [ a > c | d ]
+    def test = {{ lorem \s\s ipsum }} [ a > c | d ] 
+    
+    start 
+        a \n b \n cds df s $test
+    end
 `, true);
 
 
