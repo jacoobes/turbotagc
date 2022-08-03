@@ -61,8 +61,7 @@ fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
             Token::Whitespace(i) => Expr::Whitespace(i),
         }.labelled("prims");
 
-        let pipeable=  prims.clone()
-            .or(
+        let pipeable=
             just(Token::LSquare)
             .ignore_then(
                 expr.clone()
@@ -79,18 +78,18 @@ fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
             .then_ignore(just(Token::RSquare))
             .map(| (expr, chain) : (Expr, Vec<Expr>)   | {
                 Expr::Pipeable { expr: Box::new(expr), chain, }
-            }));
+            });
         let fill_ins = just(Token::LLBrace)
                 .ignore_then(expr.clone().repeated())
                 .then_ignore(just(Token::RRBrace))
                 .map(|t : Vec<Expr>| {
                     Expr::FillIn(t)
                 }).labelled("fill_in");
-        let atom =
-            prims
-              .or(pipeable)
-              .or(fill_ins);
-        atom
+        let atom = prims
+          .or(pipeable)
+          .or(fill_ins);
+        let or_= atom.clone().then_ignore(just(Token::Or)).then(atom.clone()).map(|s| Expr::Bool(true));
+        or_.or(atom)
     }).repeated()
 }
 
@@ -103,6 +102,7 @@ fn decl_parser() ->  impl Parser<Token, Vec<Decl>, Error = Simple<Token>> {
             .then(expr_parser())
             .map(|s| {
                 Decl::Def { name: s.0, rhs: s.1 }
-            });
+            })
+            .then_ignore(just(Token::End));
         defs.repeated()
 }

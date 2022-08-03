@@ -1,18 +1,14 @@
-use std::ops::Range;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expr {
     Var(String),
-    Call(String, Vec<Expr>),
     Bool(bool),
     FillIn(Vec<Expr>),
     Pipeable {
         expr : Box<Expr>,
         chain : Vec<Expr>
     },
-    Or {
-        branches : Vec<Expr>
-    },
+    Or(Box<Expr>),
     Template(String),
     Whitespace(String)
 }

@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use logos::{ Lexer, Logos };
 
 #[derive(Logos, Debug, PartialEq, Clone, Hash, Eq)]
