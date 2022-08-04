@@ -1,8 +1,9 @@
 const { compile } = require('../pkg/turbotagc')
 
 compile(String.raw`
-    start 
-      pooba > c | d | e | end a dsf dsa {{ a }}
+    def teo = dsf dsf d f end
+    start   
+      ($p)ooba > c | d | e | end a dsf dsa {{ a }}
     end
 `);
 

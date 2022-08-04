@@ -1,4 +1,5 @@
-use logos::{ Lexer, Logos };
+use std::borrow::BorrowMut;
+use logos::{Lexer, Logos, Source};
 
 #[derive(Logos, Debug, PartialEq, Clone, Hash, Eq)]
 pub enum Token {
@@ -7,7 +8,7 @@ pub enum Token {
     Pipe,
     #[regex("[a-zA-Z0-9]+", parse_str)]
     Ident(String),
-    #[regex(r"\$[a-zA-Z]+", parse_str)]
+    #[regex(r"\$[a-zA-Z]+", parse_template)]
     Template(String),
     #[token("{{")]
     LLBrace,
@@ -60,3 +61,7 @@ fn parse_str(lex: &mut Lexer<Token>) -> Option<String> {
     Some(slice.to_string())
 }
 
+fn parse_template(lex: &mut Lexer<Token>) -> Option<String> {
+    let slice: &str = lex.slice();
+    Some(slice.slice(1..slice.len()).unwrap().to_string())
+}

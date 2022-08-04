@@ -59,7 +59,8 @@ fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error=Simple<Token>> {
             Token::Template(i) => Expr::Template(i),
             Token::Whitespace(i) => Expr::Whitespace(i),
         }.labelled("prims");
-
+        let atoms = prims.or(
+            expr.clone().delimited_by(just(Token::LParen), just(Token::RParen)));
         let pipeable = prims
             .clone()
             .then_ignore(just(Token::RArrow))
@@ -91,7 +92,7 @@ fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error=Simple<Token>> {
 
         fill_ins
             .or(pipeable)
-            .or(prims)
+            .or(atoms)
     }).repeated()
 }
 
