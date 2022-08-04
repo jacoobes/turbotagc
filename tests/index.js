@@ -1,22 +1,21 @@
 const { compile } = require('../pkg/turbotagc')
 
 compile(String.raw`
-    def test = {{ lorem ipsum }} [ a > c | d ] end
-    
     start 
-      pooba pooba [a > v | s ] ??[ v > c | z ]
+      pooba > c | d | e | end a dsf dsa {{ a }}
     end
 `);
 
 
 /**
  *  Expr
- *  func s(a,v,x) start
+ *
+ *  prim = var | bool | whitespace | template
+ *  pipeable = prim '>' (prim '|')+
+ *  fillin = '{{' expr+ '}}'
+ *  expr = prim | pipeable | fillin
  *
  *
- *  end
- *  parenthesis -> prim
- *  prim -> prim
  *
  *
  *

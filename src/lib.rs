@@ -6,8 +6,8 @@ use chumsky::Stream;
 use logos::{Logos, Span};
 use logos::Lexer;
 use wasm_bindgen::prelude::*;
-use crate::decl::Decl;
 
+use crate::decl::Decl;
 use crate::expr::Expr;
 use crate::tokens::Token;
 
@@ -31,26 +31,25 @@ extern {
 
 
 #[wasm_bindgen]
-pub fn compile(content : &str)  {
-    let mut lexer : Lexer<Token> = Token::lexer(content);
+pub fn compile(content: &str) {
+    let mut lexer: Lexer<Token> = Token::lexer(content);
     let stream = Stream::from_iter(Span::new((), 0usize..lexer.source().len()), lexer.spanned());
 
     log(&format!("{:?}", parser().parse(stream)))
 }
 
-fn parser() -> impl Parser<Token, (Vec<Decl>, Vec<Expr>), Error = Simple<Token>> {
+fn parser() -> impl Parser<Token, (Vec<Decl>, Vec<Expr>), Error=Simple<Token>> {
     decl_parser()
         .then(
             expr_parser()
                 .delimited_by(
-                just(Token::Start), just(Token::End)
-            )
+                    just(Token::Start), just(Token::End),
+                )
         )
         .then_ignore(end())
-
 }
 
-fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
+fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error=Simple<Token>> {
     use chumsky::prelude::*;
 
     recursive(|expr| {
@@ -61,48 +60,51 @@ fn expr_parser() -> impl Parser<Token, Vec<Expr>, Error = Simple<Token>> {
             Token::Whitespace(i) => Expr::Whitespace(i),
         }.labelled("prims");
 
-        let pipeable=
-            just(Token::LSquare)
-            .ignore_then(
-                expr.clone()
-                    .then_ignore(just(Token::RArrow))
-                    .then(
-                     expr.clone()
-                         .separated_by(
-                            just(Token::Pipe)
-                        )
-                        .allow_leading()
-                        .allow_trailing()
-                    )
+        let pipeable = prims
+            .clone()
+            .then_ignore(just(Token::RArrow))
+            .then(
+                prims
+                    .then_ignore(just(Token::Pipe))
+                    .repeated()
             )
-            .then_ignore(just(Token::RSquare))
-            .map(| (expr, chain) : (Expr, Vec<Expr>)   | {
-                Expr::Pipeable { expr: Box::new(expr), chain, }
-            });
-        let fill_ins = just(Token::LLBrace)
-                .ignore_then(expr.clone().repeated())
-                .then_ignore(just(Token::RRBrace))
-                .map(|t : Vec<Expr>| {
-                    Expr::FillIn(t)
-                }).labelled("fill_in");
-        let atom = prims
-          .or(pipeable)
-          .or(fill_ins);
-        let or_= atom.clone().then_ignore(just(Token::Or)).then(atom.clone()).map(|s| Expr::Bool(true));
-        or_.or(atom)
+            .foldl(|v, s : Expr |
+                Expr::Pipeable(Box::new(v), Box::new(s))
+            ).then_ignore(just(Token::End));
+
+        let fill_ins =
+            expr.clone()
+                .delimited_by(
+            just(Token::LLBrace), just(Token::RRBrace)
+        ).map(|e: Expr | Expr::FillIn(Box::new(e)));
+
+        // let or_ =
+        //     fill_ins.clone()
+        //         .then(just(Token::Or))
+        //         .to(Expr::Or  as fn(_, _) -> _)
+        //         .then(
+        //             fill_ins.repeated()
+        //                 .foldl(|lhs, rhs| {
+        //                     Expr::Or(Box::new(lhs.0), Box::new(rhs.1))
+        //                 })
+        //         );
+
+        fill_ins
+            .or(pipeable)
+            .or(prims)
     }).repeated()
 }
 
 
-fn decl_parser() ->  impl Parser<Token, Vec<Decl>, Error = Simple<Token>> {
-        let idents = select! { Token::Ident(i) => i.to_string() };
-        let defs = just(Token::Def)
-            .ignore_then(idents)
-            .then_ignore(just(Token::Equal))
-            .then(expr_parser())
-            .map(|s| {
-                Decl::Def { name: s.0, rhs: s.1 }
-            })
-            .then_ignore(just(Token::End));
-        defs.repeated()
+fn decl_parser() -> impl Parser<Token, Vec<Decl>, Error=Simple<Token>> {
+    let idents = select! { Token::Ident(i) => i.to_string() };
+    let defs = just(Token::Def)
+        .ignore_then(idents)
+        .then_ignore(just(Token::Equal))
+        .then(expr_parser())
+        .map(|s| {
+            Decl::Def { name: s.0, rhs: s.1 }
+        })
+        .then_ignore(just(Token::End));
+    defs.repeated()
 }

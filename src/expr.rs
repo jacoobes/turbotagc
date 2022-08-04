@@ -3,12 +3,9 @@
 pub enum Expr {
     Var(String),
     Bool(bool),
-    FillIn(Vec<Expr>),
-    Pipeable {
-        expr : Box<Expr>,
-        chain : Vec<Expr>
-    },
-    Or(Box<Expr>),
+    FillIn(Box<Expr>),
+    Pipeable(Box<Expr>, Box<Expr>),
+    Or(Box<Expr>, Box<Expr>),
     Template(String),
     Whitespace(String)
 }
